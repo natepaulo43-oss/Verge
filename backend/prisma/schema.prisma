@@ -1,0 +1,96 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Firm {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  zip       String?
+  planTier  String   @default("trial")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  clients   Client[]
+  cases     Case[]
+  documents Document[]
+}
+
+model User {
+  id              String   @id @default(cuid())
+  firm            Firm     @relation(fields: [firmId], references: [id])
+  firmId          String
+  email           String   @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  phone           String?
+  role            String   @default("admin")
+  twoFactorSecret String?
+  twoFactorStatus String   @default("pending")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  documents Document[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  firm      Firm     @relation(fields: [firmId], references: [id])
+  firmId    String
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cases Case[]
+}
+
+model Case {
+  id        String   @id @default(cuid())
+  firm      Firm     @relation(fields: [firmId], references: [id])
+  firmId    String
+  client    Client   @relation(fields: [clientId], references: [id])
+  clientId  String
+  title     String
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents Document[]
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  firm         Firm     @relation(fields: [firmId], references: [id])
+  firmId       String
+  case         Case?    @relation(fields: [caseId], references: [id])
+  caseId       String?
+  uploader     User?    @relation(fields: [uploaderId], references: [id])
+  uploaderId   String?
+  gcsPath      String
+  originalName String
+  contentType  String
+  status       String   @default("uploaded")
+  extractedText String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([firmId])
+  @@index([caseId])
+  @@index([uploaderId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([originalName])
+  @@map("documents")
+}
